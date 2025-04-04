@@ -1,77 +1,66 @@
-Mise en place d'un projet microservices avec Spring Boot, Eureka et Gateway
+# Mise en place d'un projet microservices avec Spring Boot, Eureka et Gateway
 
 Ce projet démontre comment construire une architecture microservices avec Eureka comme service de découverte et Spring Cloud Gateway pour faire du routing dynamique avec load balancing automatique.
 
-1. Prérequis
+---
 
-Java 17
+## 1. Prérequis
 
-Maven
+- Java 17  
+- Maven  
+- Docker / Docker Compose  
+- Postman ou Curl pour tester
 
-Docker / Docker Compose
+---
 
-Postman ou Curl pour tester
+## 2. Structure du projet
 
-2. Structure du projet
-
+```
 microservices-library
 ├── auteur-service
 ├── livre-service
 ├── gateway-service
 └── eureka-server
+```
 
-3. Initialisation avec start.spring.io
+---
 
-Pour chaque microservice (auteur, livre, gateway)
+## 3. Initialisation avec start.spring.io
 
-Project : Maven
+### Pour chaque microservice (auteur, livre, gateway)
 
-Language : Java
+- **Project** : Maven
+- **Language** : Java
+- **Spring Boot** : 3.2.1
+- **Group** : com.example
+- **Packaging** : Jar
+- **Java** : 17
 
-Spring Boot : 3.2.1
+### Auteur / Livre Service - Dépendances :
 
-Group : com.example
+- Spring Web
+- Spring Boot DevTools
+- Spring Data JPA
+- PostgreSQL Driver
+- Spring Boot Actuator
+- Eureka Discovery Client
 
-Packaging : Jar
+### Gateway - Dépendances :
 
-Java : 17
+- Spring Cloud Gateway
+- Eureka Discovery Client
 
-Auteur/Livre Service :
+### Eureka Server - Dépendances :
 
-Dépendances :
+- Eureka Server
+- Spring Boot Actuator
 
-Spring Web
+---
 
-Spring Boot DevTools
+## 4. Configuration Eureka Server
 
-Spring Data JPA
-
-PostgreSQL Driver
-
-Spring Boot Actuator
-
-Eureka Discovery Client
-
-Gateway :
-
-Dépendances :
-
-Spring Cloud Gateway
-
-Eureka Discovery Client
-
-Eureka Server :
-
-Dépendances :
-
-Eureka Server
-
-Spring Boot Actuator
-
-4. Configuration Eureka Server
-
-Classe principale
-
+### Classe principale
+```java
 @EnableEurekaServer
 @SpringBootApplication
 public class EurekaServerApplication {
@@ -79,21 +68,23 @@ public class EurekaServerApplication {
         SpringApplication.run(EurekaServerApplication.class, args);
     }
 }
+```
 
-application.properties
-
+### application.properties
+```properties
 server.port=8761
 spring.application.name=eureka-server
 
-eureka.client.register-with-eureka=false
-# Le serveur ne s'enregistre pas lui-même
-eureka.client.fetch-registry=false
-# Il ne va pas chercher d'autres services
+eureka.client.register-with-eureka=false  # Le serveur ne s'enregistre pas lui-même
+eureka.client.fetch-registry=false        # Il ne va pas chercher d'autres services
+```
 
-5. Configuration des microservices
+---
 
-application-docker.properties (exemple pour auteur-service)
+## 5. Configuration des microservices
 
+### application-docker.properties (exemple pour `auteur-service`)
+```properties
 server.port=8081
 spring.application.name=auteur-service
 
@@ -112,11 +103,14 @@ eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka
 eureka.instance.prefer-ip-address=true
 
 spring.config.activate.on-profile=docker
+```
 
-6. Configuration Gateway
+---
 
-application.properties
+## 6. Configuration Gateway
 
+### application.properties
+```properties
 server.port=8080
 spring.application.name=gateway-service
 spring.main.web-application-type=reactive
@@ -131,11 +125,14 @@ spring.cloud.gateway.routes[0].predicates[0]=Path=/api/auteurs/**
 spring.cloud.gateway.routes[1].id=livre-service
 spring.cloud.gateway.routes[1].uri=lb://livre-service
 spring.cloud.gateway.routes[1].predicates[0]=Path=/api/clients/**
+```
 
-7. Dockerisation
+---
 
-docker-compose.yml
+## 7. Dockerisation
 
+### docker-compose.yml
+```yaml
 services:
   auteur-db:
     image: postgres:15
@@ -192,9 +189,10 @@ services:
 volumes:
   auteur-data:
   livre-data:
+```
 
-Dockerfile (ex: auteur-service)
-
+### Dockerfile (exemple : `auteur-service`)
+```Dockerfile
 FROM maven:3.9.3-eclipse-temurin-17 as builder
 WORKDIR /app
 COPY pom.xml .
@@ -205,18 +203,19 @@ FROM eclipse-temurin:17-jdk
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=docker"]
+```
 
-8. Test du Load Balancing
+---
 
-Lancer une 2ème instance du livre-service sur un autre port (ex: 8088) avec un autre port DB (ex: 5435)
+## 8. Test du Load Balancing
 
-Regarder dans Eureka (localhost:8761) > LIVRE-SERVICE apparaît 2 fois
+- Lancer une **2e instance** de `livre-service` sur un autre port (ex: `8088`) avec un autre port DB (ex: `5435`)
+- Vérifier dans Eureka (http://localhost:8761) que `LIVRE-SERVICE` apparaît **2 fois**
+- Envoyer plusieurs requêtes GET `/api/clients` depuis Postman ou curl
+- Observer dans les logs que les appels alternent entre les deux instances (`8082`, `8088`...)
 
-Envoyer plusieurs requêtes GET /api/clients depuis Postman
+---
 
-Observer dans les logs que les appels alternent entre les deux instances
+## 9. Conclusion
 
-9. Conclusion
-
-Eureka couplé à Spring Cloud Gateway permet de créer une architecture microservices dynamique, résiliente et scalable à chaud. Le load balancing se fait automatiquement par détection des instances via lb://. Aucune configuration manuelle supplémentaire n'est nécessaire.
-
+> Eureka couplé à Spring Cloud Gateway permet de créer une architecture microservices dynamique, résiliente et scalable à chaud. Le **load balancing** se fait automatiquement par détection des instances via `lb://`. Aucune configuration manuelle supplémentaire n'est nécessaire.
