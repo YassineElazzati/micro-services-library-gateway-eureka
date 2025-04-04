@@ -4,6 +4,7 @@ import com.example.livre_service.entity.Client;
 import com.example.livre_service.service.ClientService;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,9 @@ public class ClientController {
 
     private final ClientService clientService;
 
+    @Value("${server.port}")
+    private String port;
+
     @PostMapping
     public Client create(@RequestBody Client client) {
         return clientService.save(client);
@@ -23,6 +27,7 @@ public class ClientController {
 
     @GetMapping
     public List<Client> getAll() {
+        System.out.println("✅ getAll() → Instance sur le port : " + port);
         return clientService.getAll();
     }
 
